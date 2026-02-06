@@ -103,32 +103,40 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
 
 **Erdős–Rényi Graph Generation:**
 
-<img src="https://github.com/user-attachments/assets/a2c7972c-0a2d-40ef-bd5a-4180288c6e6c" width="420" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/a2c7972c-0a2d-40ef-bd5a-4180288c6e6c" width="600" />
+</p>
 
 **Multi BFS:**
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/42767e02-0ef2-4817-ae2d-62aa503a44c9" width="420" />
-  <img src="https://github.com/user-attachments/assets/e89d440a-72c9-457a-bb05-6f539f53c005" width="420" />
+  <img src="https://github.com/user-attachments/assets/42767e02-0ef2-4817-ae2d-62aa503a44c9" width="400" />
+  <img src="https://github.com/user-attachments/assets/e89d440a-72c9-457a-bb05-6f539f53c005" width="400" />
 </p>
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/ddb0efcb-15be-4303-ba4e-7d1df0e3c278" width="420" />
-  <img src="https://github.com/user-attachments/assets/d4a3ba05-27f2-4f2e-8b7b-b0a9a077bff6" width="420" />
+  <img src="https://github.com/user-attachments/assets/ddb0efcb-15be-4303-ba4e-7d1df0e3c278" width="400" />
+  <img src="https://github.com/user-attachments/assets/d4a3ba05-27f2-4f2e-8b7b-b0a9a077bff6" width="400" />
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/15fa3970-1089-43aa-99a6-7d77058dfd05" width="420" />
-  <img src="https://github.com/user-attachments/assets/378ddc71-106c-4045-8301-cfa4b12d41de" width="420" />
+  <img src="https://github.com/user-attachments/assets/15fa3970-1089-43aa-99a6-7d77058dfd05" width="400" />
+  <img src="https://github.com/user-attachments/assets/378ddc71-106c-4045-8301-cfa4b12d41de" width="400" />
 </p>
 
 **Analysis:**
 
-<img width="2585" height="1070" alt="image" src="https://github.com/user-attachments/assets/e8ff7176-934a-42f0-8cb1-7bf684e68776" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e8ff7176-934a-42f0-8cb1-7bf684e68776" width="700" />
+</p>
+
 
 
 **Visualization/Graph Export:**
 
-<img width="3456" height="2160" alt="image" src="https://github.com/user-attachments/assets/c6fede14-59c7-41ef-a698-8c67f61a526a" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/c6fede14-59c7-41ef-a698-8c67f61a526a" width="700" />
+</p>
+
 
 ------------------------------------------------------------------------------------------------------------
 **Connected Graph:**
@@ -137,15 +145,15 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
  **Erdős–Rényi Graph Generation:**
  
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/a2dbd6b3-d837-4a14-9e51-72b811f8c33b" width="380" />
+  <img src="https://github.com/user-attachments/assets/a2dbd6b3-d837-4a14-9e51-72b811f8c33b" width="400" />
 </p>
 
 
 **Multi BFS:**
 
 <<p align="center">
-  <img src="https://github.com/user-attachments/assets/1d82c607-6d8f-4488-9356-62cd6c63335e" width="420" />
-  <img src="https://github.com/user-attachments/assets/bed40955-ebf3-4324-a386-63653ba13d25" width="420" />
+  <img src="https://github.com/user-attachments/assets/1d82c607-6d8f-4488-9356-62cd6c63335e" width="400" />
+  <img src="https://github.com/user-attachments/assets/bed40955-ebf3-4324-a386-63653ba13d25" width="400" />
 
 
 **Analysis:**
@@ -169,40 +177,37 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
 
 
  **Loading GML File**
- 
-<img width="2063" height="158" alt="image" src="https://github.com/user-attachments/assets/78b045de-6b5e-46aa-b906-df0be9dc2c49" />
+<p align="center">
+  <img width="2063" height="158" alt="image" src="https://github.com/user-attachments/assets/78b045de-6b5e-46aa-b906-df0be9dc2c49" />
+</p>
+
 
 **Multi BFS:**
 <p align="center">
-  <img
-    src="https://github.com/user-attachments/assets/f8bba80d-8c6e-4f1a-b2dd-06cab427b7f1"
-    width="450"
-  />
-</p>
-
-<p align="center">
-  <img
-    src="https://github.com/user-attachments/assets/4f6eafdd-7785-4f80-9664-b3e26cd1b1df"
-    width="450"
-  />
+  <img src="https://github.com/user-attachments/assets/aa4bd39f-e343-44dd-a69b-751669a462ce" width="350" />
+  <img src="https://github.com/user-attachments/assets/3dd623df-2949-4854-b001-69cd6e8e0393" width="350" />
 </p>
 
 
 <p align="center">
-  <img
-    src="https://github.com/user-attachments/assets/f8bba80d-8c6e-4f1a-b2dd-06cab427b7f1"
-    width="700"
-  />
+  <img src="https://github.com/user-attachments/assets/41b64422-97fa-46dc-8f08-b1662f085f07" width="700" />
 </p>
+
+
+
+**Analysis**
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/5f5f55cd-9365-41bc-8fc7-140ca36e9aee" width="700" />
+</p>
+
 
 **Visualization:**
 
 <p align="center">
-  <img
-    src="https://github.com/user-attachments/assets/4f6eafdd-7785-4f80-9664-b3e26cd1b1df"
-    width="700"
-  />
+  <img src="https://github.com/user-attachments/assets/9265890b-9558-4d31-aa7b-f2f797858537" width="700" />
 </p>
+
 
 
 -------------------------------------------------------------------------------------------------------------
