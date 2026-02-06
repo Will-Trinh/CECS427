@@ -126,3 +126,57 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
 **Visualization/Graph Export:**
 
 <img width="3456" height="2160" alt="image" src="https://github.com/user-attachments/assets/c6fede14-59c7-41ef-a698-8c67f61a526a" />
+
+------------------------------------------------------------------------------------------------------------
+**Connected Graph:**
+ `python ./graph.py --create_random_graph 5 8 --multi_BFS 0  --analyze --plot`
+ 
+ **Erdős–Rényi Graph Generation:**
+ 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/a2dbd6b3-d837-4a14-9e51-72b811f8c33b" width="380" />
+</p>
+
+
+**Multi BFS:**
+
+<<p align="center">
+  <img src="https://github.com/user-attachments/assets/1d82c607-6d8f-4488-9356-62cd6c63335e" width="420" />
+  <img src="https://github.com/user-attachments/assets/bed40955-ebf3-4324-a386-63653ba13d25" width="420" />
+</p>
+
+**Analysis:**
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/cc012091-fea6-4b05-9de0-d9b204c8549a" width="700" />
+</p>
+
+
+**Visualization:**
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/996a8844-8a7d-451a-9dde-4b9075a87e80" width="700" />
+</p>
+------------------------------------------------------------------------------------------------------------
+**Invalid Command: Missing Args**
+
+`python ./graph.py --create_random_graph  --multi_BFS 0  --analyze --plot`
+
+<img
+  src="https://github.com/user-attachments/assets/837ede92-e057-49e8-8221-9a9cbe3f9f5c"
+  alt="image"
+  style="display:block; margin: 0 auto;"
+/>
+
+-------------------------------------------------------------------------------------------------------------
+**Non-Existent Node Value for multi_bfs**
+
+`python ./graph.py --create_random_graph 7 1  --multi_BFS 12 6  --analyze --plot`
+
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b7492bbd-de55-4b59-a022-aaa952a0dda8" />
+</p>
+
+
+
