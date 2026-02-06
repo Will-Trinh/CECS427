@@ -222,6 +222,12 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
   style="display:block; margin: 0 auto;"
 />
 
+
+` python ./graph.py --create_random_graph 10 0.3 --multi_BFS 0 3 10 --analyze --plot --output`
+<img width="2257" height="131" alt="image" src="https://github.com/user-attachments/assets/268fd415-fe6b-4f23-a1cf-fff00946d0e8" />
+
+
+
 -------------------------------------------------------------------------------------------------------------
 **Non-Existent Node Value for multi_bfs**
 
