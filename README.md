@@ -143,7 +143,7 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
 <<p align="center">
   <img src="https://github.com/user-attachments/assets/1d82c607-6d8f-4488-9356-62cd6c63335e" width="420" />
   <img src="https://github.com/user-attachments/assets/bed40955-ebf3-4324-a386-63653ba13d25" width="420" />
-</p>
+
 
 **Analysis:**
 
@@ -157,7 +157,9 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
 <p align="center">
   <img src="https://github.com/user-attachments/assets/996a8844-8a7d-451a-9dde-4b9075a87e80" width="700" />
 </p>
-------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------------------------------
+
 **Invalid Command: Missing Args**
 
 `python ./graph.py --create_random_graph  --multi_BFS 0  --analyze --plot`
