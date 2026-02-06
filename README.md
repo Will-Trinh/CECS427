@@ -22,8 +22,11 @@
   
 ## Usage Instructions
 1. install required libraries
-pip install networkx matplotlib
-2. Run program using terminal or command prompt
+   ```bash
+   pip install networkx matplotlib
+3. For further detailed usage instructions, run:
+   python ./graph.py --help
+5. Run program using terminal or command prompt
 
 Command line structure: 
 
@@ -157,6 +160,50 @@ Command Line → Argument Parsing (argparse) → Parsed Arguments → Graph Inpu
 <p align="center">
   <img src="https://github.com/user-attachments/assets/996a8844-8a7d-451a-9dde-4b9075a87e80" width="700" />
 </p>
+
+-------------------------------------------------------------------------------------------------------------
+
+**Loading an existing gml using --input**
+
+ `python ./graph.py --input sample.gml  --multi_BFS 1 2  --analyze --plot `
+
+
+ **Loading GML File**
+ 
+<img width="2063" height="158" alt="image" src="https://github.com/user-attachments/assets/78b045de-6b5e-46aa-b906-df0be9dc2c49" />
+
+**Multi BFS:**
+<p align="center">
+  <img
+    src="https://github.com/user-attachments/assets/f8bba80d-8c6e-4f1a-b2dd-06cab427b7f1"
+    width="450"
+  />
+</p>
+
+<p align="center">
+  <img
+    src="https://github.com/user-attachments/assets/4f6eafdd-7785-4f80-9664-b3e26cd1b1df"
+    width="450"
+  />
+</p>
+
+
+<p align="center">
+  <img
+    src="https://github.com/user-attachments/assets/f8bba80d-8c6e-4f1a-b2dd-06cab427b7f1"
+    width="700"
+  />
+</p>
+
+**Visualization:**
+
+<p align="center">
+  <img
+    src="https://github.com/user-attachments/assets/4f6eafdd-7785-4f80-9664-b3e26cd1b1df"
+    width="700"
+  />
+</p>
+
 
 -------------------------------------------------------------------------------------------------------------
 
