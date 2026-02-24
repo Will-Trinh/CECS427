@@ -1,6 +1,0 @@
-python ./graph.py --create_random_graph 10 0.3 --multi_BFS 0 3 10 --analyze --plot
-python ./graph.py --create_random_graph 15 0.5 --multi_BFS 1 4 15 --analyze
-python ./graph.py --create_random_graph 50 0.4 --multi_BFS 0 5 50 --analyze --plot
-python ./graph.py --create_random_graph 75 0.6 --multi_BFS 2 8 75 --analyze
-python ./graph.py --create_random_graph 40 0.85 --multi_BFS 0 6 40 --analyze --plot
-python ./graph.py --create_random_graph 60 0.9 --multi_BFS 1 10 60 --analyze
