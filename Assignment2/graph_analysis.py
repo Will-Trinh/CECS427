@@ -2,11 +2,13 @@ import networkx as nx
 import math
 import random
 import argparse
-from collections import deque
+from collections import deque, Counter
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 from matplotlib.colors import LinearSegmentedColormap
+import csv
+from scipy import stats
 
 
 
@@ -65,7 +67,28 @@ def printStats(graph):
     for i, comp in enumerate(components, 1):
         print(f"Component {i:>2} | Size: {len(comp):>2} | Nodes: {sorted(comp)}")
     print("-" * 30)
-    
+
+
+def ensure_attributes(G):
+    """Ensure graph has 'color' node attributes and 'sign' edge attributes.
+    If missing, assign random defaults and warn the user."""
+    colors = nx.get_node_attributes(G, 'color')
+    if len(colors) < G.number_of_nodes():
+        missing = G.number_of_nodes() - len(colors)
+        print(f"  Warning: {missing} node(s) missing 'color' attribute. Assigning random colors.")
+        palette = ["red", "blue", "green", "yellow", "purple"]
+        for node in G.nodes():
+            if node not in colors:
+                G.nodes[node]['color'] = random.choice(palette)
+    signs_present = sum(1 for u, v, d in G.edges(data=True) if 'sign' in d)
+    if signs_present < G.number_of_edges():
+        missing = G.number_of_edges() - signs_present
+        print(f"  Warning: {missing} edge(s) missing 'sign' attribute. Assigning random signs.")
+        for u, v, d in G.edges(data=True):
+            if 'sign' not in d:
+                G[u][v]['sign'] = random.choice(['+', '-'])
+    return G
+
 
 #==============================================================================
 #Partition graph into n components using Girvan Newman method until n number of components
@@ -286,12 +309,142 @@ def neighborhoodOverlap(G, u, v):
     return len(Nu & Nv) / len(union)
 
 #==============================================================================
-# Verify Homophilly's: T test
+# Verify Homophily: T-test
 #===============================================================================
 
+def verify_homophily(G):
+    """Run a one-sample t-test for homophily on the 'color' node attribute.
+
+    For each node, compute the fraction of neighbors sharing the same color.
+    Compare the observed mean to the expected value under random assignment.
+    """
+    colors = nx.get_node_attributes(G, 'color')
+    if not colors:
+        print("No 'color' attribute found on nodes. Cannot verify homophily.")
+        return
+
+    # For each node, compute fraction of same-color neighbors
+    fractions = []
+    for node in G.nodes():
+        neighbors = list(G.neighbors(node))
+        if len(neighbors) == 0:
+            continue
+        same = sum(1 for n in neighbors if colors.get(n) == colors.get(node))
+        fractions.append(same / len(neighbors))
+
+    if len(fractions) < 2:
+        print("Not enough non-isolated nodes to perform t-test.")
+        return
+
+    # Expected value under null hypothesis (random color assignment):
+    # P(same color) = sum of p_c^2 for each color c
+    color_counts = Counter(colors.values())
+    n = len(colors)
+    expected = sum((count / n) ** 2 for count in color_counts.values())
+
+    # One-sample t-test: is the observed mean significantly different from expected?
+    observed_mean = sum(fractions) / len(fractions)
+    t_stat, p_value = stats.ttest_1samp(fractions, expected)
+
+    print(f"\nHomophily Verification (t-test)")
+    print("-" * 50)
+    print(f"Node attribute tested: 'color'")
+    print(f"Color distribution: {dict(color_counts)}")
+    print(f"Number of non-isolated nodes: {len(fractions)}")
+    print(f"Expected same-color neighbor fraction (null): {expected:.4f}")
+    print(f"Observed mean same-color neighbor fraction:   {observed_mean:.4f}")
+    print(f"t-statistic: {t_stat:.4f}")
+    print(f"p-value:     {p_value:.6f}")
+    print("-" * 50)
+    if p_value < 0.05:
+        if t_stat > 0:
+            print("Result: HOMOPHILY detected (p < 0.05)")
+            print("  Nodes tend to connect with same-color neighbors more than expected.")
+        else:
+            print("Result: HETEROPHILY detected (p < 0.05)")
+            print("  Nodes tend to connect with different-color neighbors more than expected.")
+    else:
+        print("Result: No significant homophily detected (p >= 0.05)")
+        print("  Same-color neighbor fraction is consistent with random mixing.")
+
+
 #==============================================================================
-# Verify Signed Balanced Graph
+# Verify Signed Balanced Graph (BFS-based)
 #===============================================================================
+
+def verify_balanced_graph(G):
+    """Check if a signed graph is structurally balanced using BFS-based 2-coloring.
+
+    A signed graph is balanced iff nodes can be partitioned into two groups
+    such that all positive edges are within groups and all negative edges
+    are between groups.
+    """
+    sign_data = nx.get_edge_attributes(G, 'sign')
+    if not sign_data:
+        print("No 'sign' attribute found on edges. Cannot verify balance.")
+        return
+
+    def get_sign(u, v):
+        s = sign_data.get((u, v)) or sign_data.get((v, u))
+        return str(s).strip() if s else "+"
+
+    balanced = True
+    node_labels = {}
+    violating_edge = None
+
+    for component in nx.connected_components(G):
+        sub = G.subgraph(component)
+        start = next(iter(component))
+        node_labels[start] = 0
+        queue = deque([start])
+        component_balanced = True
+
+        while queue and component_balanced:
+            node = queue.popleft()
+            for neighbor in sub.neighbors(node):
+                sign = get_sign(node, neighbor)
+                if sign == "+":
+                    expected_label = node_labels[node]       # same group
+                else:
+                    expected_label = 1 - node_labels[node]   # opposite group
+
+                if neighbor in node_labels:
+                    if node_labels[neighbor] != expected_label:
+                        component_balanced = False
+                        violating_edge = (node, neighbor, sign)
+                        break
+                else:
+                    node_labels[neighbor] = expected_label
+                    queue.append(neighbor)
+
+        if not component_balanced:
+            balanced = False
+            break
+
+    # Count positive and negative edges
+    pos_count = sum(1 for u, v in G.edges() if get_sign(u, v) == "+")
+    neg_count = G.number_of_edges() - pos_count
+
+    print(f"\nStructural Balance Verification (BFS)")
+    print("-" * 50)
+    print(f"Total edges: {G.number_of_edges()}")
+    print(f"Positive (+) edges: {pos_count}")
+    print(f"Negative (-) edges: {neg_count}")
+    print("-" * 50)
+
+    if balanced:
+        print("Result: Graph IS structurally balanced")
+        group0 = sorted([str(n) for n, l in node_labels.items() if l == 0])
+        group1 = sorted([str(n) for n, l in node_labels.items() if l == 1])
+        print(f"  Group X: {group0}")
+        print(f"  Group Y: {group1}")
+        print("  All (+) edges within groups, all (-) edges between groups.")
+    else:
+        print("Result: Graph is NOT structurally balanced")
+        if violating_edge:
+            u, v, s = violating_edge
+            print(f"  Violation found at edge ({u}, {v}) with sign '{s}'")
+        print("  No valid 2-partition exists for this signed graph.")
 
 #==============================================================================
 # Simulate Failures k : Verbose True: Executes for simulate command; false for robustness
@@ -493,8 +646,116 @@ def robustness_check(G, k, trials=10):
 #==============================================================================
 # Load a time series of edge changes in CSV format
 #==============================================================================
-def timeSeries(oldG, newG):
-    pass
+
+def temporal_simulation(G, csv_file):
+    """Load a CSV of edge events (source,target,timestamp,action) and animate graph evolution."""
+    events = []
+    try:
+        with open(csv_file, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                events.append({
+                    'source': str(row['source']).strip(),
+                    'target': str(row['target']).strip(),
+                    'timestamp': int(row['timestamp']),
+                    'action': row['action'].strip().lower()
+                })
+    except FileNotFoundError:
+        print(f"Error: CSV file not found: {csv_file}")
+        return G
+    except KeyError as e:
+        print(f"Error: Missing column in CSV: {e}")
+        print("  Expected columns: source, target, timestamp, action")
+        return G
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return G
+
+    if not events:
+        print("No events found in CSV file.")
+        return G
+
+    events.sort(key=lambda x: x['timestamp'])
+
+    # Group events by timestamp
+    grouped_events = []
+    current_ts = events[0]['timestamp']
+    current_group = []
+    for event in events:
+        if event['timestamp'] != current_ts:
+            grouped_events.append((current_ts, current_group))
+            current_ts = event['timestamp']
+            current_group = []
+        current_group.append(event)
+    grouped_events.append((current_ts, current_group))
+
+    sim = G.copy()
+
+    print(f"\nTemporal Simulation: {len(events)} event(s) across {len(grouped_events)} timestamp(s)")
+    print(f"Source file: {csv_file}")
+    print("-" * 50)
+
+    plt.ion()
+    fig, ax = plt.subplots(figsize=(10, 8))
+    pos = nx.spring_layout(sim, seed=42, k=1.5, iterations=200)
+
+    # Draw initial state
+    ax.clear()
+    nx.draw_networkx(sim, pos, ax=ax, node_size=400, node_color="#cfe8ff",
+                     edgecolors="black", with_labels=True)
+    ax.set_title("Temporal Simulation \u2014 Initial State (t=0)")
+    ax.set_axis_off()
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    plt.pause(1.5)
+
+    for ts, event_group in grouped_events:
+        added_edges = []
+        for event in event_group:
+            src, tgt = event['source'], event['target']
+            action = event['action']
+            if action == 'add':
+                sim.add_edge(src, tgt)
+                added_edges.append((src, tgt))
+                print(f"  t={ts}: ADD    ({src}, {tgt})")
+            elif action == 'remove':
+                if sim.has_edge(src, tgt):
+                    sim.remove_edge(src, tgt)
+                    print(f"  t={ts}: REMOVE ({src}, {tgt})")
+                else:
+                    print(f"  t={ts}: SKIP   ({src}, {tgt}) - edge not present")
+            else:
+                print(f"  t={ts}: UNKNOWN action '{action}' for ({src}, {tgt})")
+
+        # Recompute layout including any new nodes
+        pos = nx.spring_layout(sim, pos=pos, seed=42, k=1.5, iterations=50)
+
+        ax.clear()
+        regular_edges = [(u, v) for u, v in sim.edges()
+                         if (u, v) not in added_edges and (v, u) not in added_edges]
+        nx.draw_networkx_edges(sim, pos, edgelist=regular_edges, ax=ax, alpha=0.6)
+        if added_edges:
+            valid_added = [(u, v) for u, v in added_edges if sim.has_edge(u, v)]
+            if valid_added:
+                nx.draw_networkx_edges(sim, pos, edgelist=valid_added,
+                                       edge_color="green", width=2.5, ax=ax)
+        nx.draw_networkx_nodes(sim, pos, node_size=400, node_color="#cfe8ff",
+                               edgecolors="black", ax=ax)
+        nx.draw_networkx_labels(sim, pos, ax=ax)
+
+        n_comp = nx.number_connected_components(sim)
+        ax.set_title(f"Temporal Simulation \u2014 t={ts} | Nodes: {sim.number_of_nodes()} "
+                     f"| Edges: {sim.number_of_edges()} | Components: {n_comp}")
+        ax.set_axis_off()
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+        plt.pause(1.5)
+
+    plt.ioff()
+    print(f"\nFinal Graph State After Temporal Simulation:")
+    printStats(sim)
+    plt.show()
+    return sim
     
 
 def main():
@@ -528,18 +789,19 @@ def main():
     if args.plot:
         print("About to plot:", G.number_of_nodes(), "nodes,", G.number_of_edges(), "edges")
         plot(G, args.plot)
+    if args.verify_homophily or args.verify_balanced_graph:
+        ensure_attributes(G)
     if args.verify_homophily:
-        pass
-    if args.output:
-        outputFinal(G, args.output)
-    
+        verify_homophily(G)
+    if args.verify_balanced_graph:
+        verify_balanced_graph(G)
     if args.simulate_failures:
         k = args.simulate_failures
         simulate_failures(G, k)
-
-    
     if args.temporal_simulation:
-        pass
+        G = temporal_simulation(G, args.temporal_simulation)
+    if args.output:
+        outputFinal(G, args.output)
     
         
     
