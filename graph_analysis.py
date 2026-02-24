@@ -18,7 +18,6 @@ from matplotlib.colors import LinearSegmentedColormap
 # Argument Parsing
 # =============================================================================
 
-import argparse
 def parse_args():
     p=argparse.ArgumentParser(description="Graph Analysis of Network Structures and Dynamic Network Behaviors")
     #input file
@@ -26,9 +25,8 @@ def parse_args():
     #partition
     p.add_argument("--components",type=int,help="Partition graph into n components using Girvan-Newman")
     #export each component
-    p.add_argument("--split_output_dir",type=str,help="Directory to export each component as .gml")
-    #plotting visualization
-    p.add_argument("--plot",choices=["C","N","P"],help="Visualization: C=clustering,N=overlap,P=attributes")
+    p.add_argument("--split_output_dir", action="store_true", help="Export each component as separate .gml files")    #plotting visualization
+    p.add_argument("--plot",choices=["C", "c","N","n","P","p"],help="Visualization: C=clustering,N=overlap,P=attributes")
     #verify homophilly and whether the graph is balance
     p.add_argument("--verify_homophily",action="store_true",help="Run t-test for homophilly on node attributes")
     p.add_argument("--verify_balanced_graph",action="store_true",help="Check if signed graph is structurally balanced")
@@ -38,7 +36,8 @@ def parse_args():
     p.add_argument("--robustness_check",type=int,help="Run multiple k-edge failure simulations before partitioning")
     #load time series of edge changes in CSV format
     p.add_argument("--temporal_simulation",type=str,help="CSV of edge events to animate graph evolution")
-    p.add_argument("--output",type=str,help="Save final graph with updated attributes to .gml")
+    p.add_argument("--output", nargs="?", const="outputFinal.gml", help="Save final graph to .gml (optional filename)"
+)
     return p.parse_args()
 
 
@@ -81,15 +80,11 @@ def partition(graph, n):
     num_components = nx.number_connected_components(graph)
     if num_components > n:
         print(f"Graph already has {num_components} components (> {n}).")
-        return [set(c) for c in nx.connected_components(graph)]
+        return graph
     if num_components == n:
         print("Graph already has desired number of components.")
-        return [set(c) for c in nx.connected_components(graph)]
-    
-    # not sure if required here : 
-    # robustness_check(graph, k)
-    
-    print("\n\nUsing Girvan–Newman Method to Partition: Graph Into {n} Components")
+        return graph
+    print(f"\n\nUsing Girvan–Newman Method to Partition: Graph Into {n} Components")
     print("-" * 50)
     step = 1
     print("\nGraph Stats Before Partitioning")
@@ -117,8 +112,26 @@ def partition(graph, n):
     printStats(graph)
     return graph
     
-        
 
+#==============================================================================
+#Output graph components and the --output final graph
+#==============================================================================
+def outputComponents(graph):
+    components = list(nx.connected_components(graph))
+    for i, nodes in enumerate(components, 1):
+        subgraph = graph.subgraph(nodes).copy()
+        filename = f"component_{i}.gml"
+        nx.write_gml(subgraph, filename)
+
+    print(f"\nExported {len(components)} components as separate .gml files in current folder.")
+    
+def outputFinal(graph, filename):
+    if not filename.endswith(".gml"):
+        filename += ".gml"
+    nx.write_gml(graph, filename)
+    print(f"\nFinal graph saved as: {filename}") 
+    
+    
 #==============================================================================
 # Plot
 #===============================================================================
@@ -126,7 +139,7 @@ def plot(graph, choice):
     if graph.number_of_nodes() == 0:
         print("Graph is empty....")
         return
-    pos = nx.spring_layout(graph, seed=42,k = 0.5)
+    pos = nx.spring_layout(graph, seed=42,k = 1.5, iterations=200)
     #----- C --------
     if choice.lower() == 'c':
         print("Plotting clustering coefficient...")
@@ -136,9 +149,7 @@ def plot(graph, choice):
 
         nodeSizes = [300 + cc[n] * 2000 for n in graph.nodes()]
         nodeColors = [degree[n] for n in graph.nodes()]
-
-        # Create figure + axis (IMPORTANT for colorbar)
-        fig, ax = plt.subplots(figsize = (8, 6))
+        fig, ax = plt.subplots(figsize = (10, 8))
 
         nodes = nx.draw_networkx_nodes(
             graph, pos,
@@ -146,20 +157,22 @@ def plot(graph, choice):
             cmap=plt.cm.BuPu, edgecolors = "black",
             ax=ax
         )
-
+        
         nx.draw_networkx_edges(graph, pos, ax=ax)
         nx.draw_networkx_labels(graph, pos, ax=ax)
         cBar = fig.colorbar(nodes, ax=ax, label="Degree")
         cBar.set_ticks(range(min(nodeColors), max(nodeColors) + 1))
-
         ax.set_title("Clustering Coefficient (size) & Degree (color)", pad = 15)
         ax.set_axis_off()
         plt.show()
         
     #plot N -> thickness of edges by neighborhood overlap, color edges (deg(u)+deg(v))
+    #----- N --------
     if choice.lower() == 'n':
         print("Plotting the Neighborhood Overlap... ")
-        fig, ax = plt.subplots(figsize = (8, 6))
+        pos = nx.spring_layout(graph, seed=42,k = 2.0, iterations=200)
+
+        fig, ax = plt.subplots(figsize = (10, 8))
         edgeList = list(graph.edges())
         degree = dict(graph.degree())
         edgeWidth = []
@@ -174,7 +187,7 @@ def plot(graph, choice):
 
         nodes = nx.draw_networkx_nodes(
             graph, pos,
-            node_size=600, node_color ="white", edgecolors="black",
+            node_size=600, node_color ="#cfe8ff", edgecolors="black",
             ax=ax
         )
         nx.draw_networkx_edges(
@@ -202,73 +215,66 @@ def plot(graph, choice):
         ax.set_title("Neighborhood Overlap (width) & Degree Sum (color)")
         ax.set_axis_off()
         plt.show()
-            
-    #plot P -> the existing attributes graph has
+        
+    #----- P --------
     if choice.lower() == 'p':
         print("Plotting node and edge attributes....")
-        fig, ax = plt.subplots(figsize=(8, 6))
-        pos = nx.spring_layout(graph, seed=42)
-        # Node colors (assumes node attribute "color" exists)
+        fig, ax = plt.subplots(figsize=(10, 8))
         components = list(nx.connected_components(graph))
         cMap = LinearSegmentedColormap.from_list(
-            "myGradient",["#efe0d4","#fdf8f2","#ece4d8","#e3e2d6","#f6dbd2"])
-        
-        n = len(components)
-
-        for i, comp in enumerate(components):
-            color = cMap(i / max(1, n - 1))
+            "myGradient", ["#dfd7d0", "#f0dabf", "#e7cfa5", "#deddce", "#f7bca9"]
+        )
+        # Map node -> component index
+        node_to_comp = {}
+        for idx, comp in enumerate(components):
             for node in comp:
-                graph.nodes[node]["color"] = color
-        nodeColors = [graph.nodes[n]["color"] for n in graph.nodes()]
+                node_to_comp[node] = idx
+        # Build node colors in the SAME order as graph.nodes()
+        n_comp = len(components)
+        nodeColors = [
+            cMap(node_to_comp[node] / max(1, n_comp - 1))
+            for node in graph.nodes()
+        ]
+        # --- Build edge list once (post-partition) ---
+        edgeList = list(graph.edges())
         edgeColors = []
-        for u, v in graph.edges():
-            sign = graph[u][v].get("sign", 1)
-            if sign == -1:
-                edgeColors.append("#b98980")
-            else:
-                edgeColors.append("#8fa3a3")   # positive
-        # Edge colors (assumes edge attribute "sign" exists)
         edgeLabels = {}
-        for u, v in graph.edges():
-            sign = graph[u][v].get("sign", 1)
-            if sign == -1:
+        for u, v in edgeList:
+            sign = str(graph[u][v].get("sign", "+")).strip()  # '+' or '-'
+            if sign == "-":
+                edgeColors.append("#b98980")
                 edgeLabels[(u, v)] = "-"
             else:
+                edgeColors.append("#8fa3a3")
                 edgeLabels[(u, v)] = "+"
-        nx.draw_networkx_nodes(
-            graph, pos,
-            node_color=nodeColors,
-            node_size=600,
-            edgecolors="#4B2E2B",
-            ax=ax
-        )
-
+        # Draw edges first
         nx.draw_networkx_edges(
             graph, pos,
-            edge_color=edgeColors,
-            width=2,
+            edgelist=edgeList, edge_color=edgeColors,
+            width=2.5, alpha=0.95,
+            ax=ax
+        )
+        nx.draw_networkx_nodes(
+            graph, pos,
+            node_color=nodeColors, node_size=600,
+            edgecolors="#4B2E2B",
+            linewidths=1.5,
             ax=ax
         )
         nx.draw_networkx_edge_labels(
-        graph,
-        pos,
-        edge_labels=edgeLabels,
-        font_size=12,
-        ax=ax
-)
-
+            graph, pos,
+            edge_labels=edgeLabels,
+            font_size=12,
+            ax=ax
+        )
         nx.draw_networkx_labels(graph, pos, ax=ax)
-
-        node_patch = mpatches.Patch(color="blue", label="Node color attribute")
-        pos_line = mlines.Line2D([], [], color="#8fa3a3", lw=2, label="Positive edge")
-        neg_line = mlines.Line2D([], [], color="#b98980", lw=2, label="Negative edge")
-
-        ax.legend(handles=[node_patch, pos_line, neg_line])
-
-        ax.set_title("Graph Attributes")
+        
+        pos_line = mlines.Line2D([], [], color="#8fa3a3", lw=2, label="Positive edge (+)")
+        neg_line = mlines.Line2D([], [], color="#b98980", lw=2, label="Negative edge (-)")
+        ax.legend(handles=[pos_line, neg_line])
+        ax.set_title("Graph Attributes (Nodes colored by component)")
         ax.set_axis_off()
         plt.show()
-
 
 #helper for calculating neighborhood overlap
 def neighborhoodOverlap(G, u, v):
@@ -405,7 +411,7 @@ def robustness_check(G, k, trials=10):
 
     print(f"\nRobustness Check: {trials} Trial(s) of Removing {k} Random Edge(s)")
     print("-" * 140)
-    # original clusters for persistence comparison
+    # original clusters for persistence: using a threshold
     original_clusters = [set(c) for c in nx.connected_components(G)]
     persist_threshold = 0.90
 
@@ -430,13 +436,11 @@ def robustness_check(G, k, trials=10):
     for t in range(1, trials + 1):
         result = simulate_failures(G, k, verbose=False)
 
-        # --- avg shortest path change ---
         avgOld = result["avgOld"]
         avgNew = result["avgNew"]
         delta = (avgNew - avgOld) if (avgOld is not None and avgNew is not None) else None
         delta_str = "N/A" if delta is None else f"{delta:.4f}"
 
-        # --- component stats ---
         sizes = result["component_sizes"]
         num_comp = result["num_components"]
         min_c = sizes[0] if sizes else 0
@@ -475,7 +479,6 @@ def robustness_check(G, k, trials=10):
         if delta is not None:
             deltas.append(delta)
 
-    # --- summary ---
     avg_components = sum(comp_counts) / trials
 
     print("\nResults Summary Across All Trials")
@@ -495,8 +498,7 @@ def timeSeries(oldG, newG):
     
 
 def main():
-    parser = parse_args()
-    args = parser.parse_args()
+    args = parse_args()
     if args.input:
         try:
             print(f"Loading graph from {args.input}...")
@@ -514,23 +516,33 @@ def main():
         except Exception as e:
             print(f"Error reading file: {e}")
             return
-    else:
-        parser.error("Either --input or --create_random_graph must be provided")
+    if args.components:
+        #optional robustness check
+        if args.robustness_check:
+            k = args.robustness_check
+            robustness_check(G, k)
+        G = partition(G, args.components)
+        #output components in different files
+        if args.split_output_dir:
+            outputComponents(G)  
+    if args.plot:
+        print("About to plot:", G.number_of_nodes(), "nodes,", G.number_of_edges(), "edges")
+        plot(G, args.plot)
+    if args.verify_homophily:
+        pass
+    if args.output:
+        outputFinal(G, args.output)
     
+    if args.simulate_failures:
+        k = args.simulate_failures
+        simulate_failures(G, k)
+
     
-
-#just testing the functions
-if __name__ == "__main__":
-    G = nx.Graph()
-    # Two clusters connected by one bridge edge
-    edges = [
-        ("1","2"),("2","3"),("3","4"),("4","1"),   # Cluster 1
-        ("5","6"),("6","7"),("7","8"),("8","5"),   # Cluster 2
-        ("4","5"), ("6", "4")                                # Bridge edge
-    ]
-
-    G.add_edges_from(edges)\
+    if args.temporal_simulation:
+        pass
+    
         
-    simulate_failures(G, 4)
-    robustness_check(G, 4)
-    components = partition(G, n=2)
+    
+
+if __name__ == "__main__":
+    main()
