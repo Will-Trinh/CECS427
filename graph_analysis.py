@@ -235,7 +235,7 @@ def plot(graph, choice):
             cMap(node_to_comp[node] / max(1, n_comp - 1))
             for node in graph.nodes()
         ]
-        # --- Build edge list once (post-partition) ---
+        # --- Build edge list once ---
         edgeList = list(graph.edges())
         edgeColors = []
         edgeLabels = {}
@@ -546,3 +546,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
