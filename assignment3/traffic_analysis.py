@@ -64,10 +64,38 @@ def socialOptimum(G, n, start, end):
     return bestFlow, bestCost, paths, bestSplit
 
 # =============================================================================
-#Nash
+# Nash Equilibrium
 # =============================================================================
-def nashEq(G, b, c):
-    pass
+def nashEq(G, n, start, end):
+    paths = list(nx.all_simple_paths(G, start, end))
+    bestPotential = float("inf")
+    bestFlow = None
+    bestSplit = None
+    for split in splits(n, len(paths)):
+        edgeFlow = {}
+        for i, path in enumerate(paths):
+            for u, v in zip(path[:-1], path[1:]):
+                edgeFlow[(u, v)] = edgeFlow.get((u, v), 0) + split[i]
+        # Rosenthal potential: sum over edges of sum_{k=1}^{x} (a*k + b)
+        # = a * x*(x+1)/2 + b * x
+        potential = 0
+        for u, v in G.edges():
+            x = edgeFlow.get((u, v), 0)
+            a = float(G[u][v]["a"])
+            b = float(G[u][v]["b"])
+            potential += a * x * (x + 1) / 2 + b * x
+        if potential < bestPotential:
+            bestPotential = potential
+            bestFlow = edgeFlow
+            bestSplit = split
+    # compute actual total travel cost at equilibrium
+    totalCost = 0
+    for u, v in G.edges():
+        x = bestFlow.get((u, v), 0)
+        a = float(G[u][v]["a"])
+        b = float(G[u][v]["b"])
+        totalCost += a * x * x + b * x
+    return bestFlow, totalCost, paths, bestSplit
 
 # =============================================================================
 # plot
@@ -98,10 +126,10 @@ def plot(G, n):
     plt.legend()
     plt.grid(True)
     plt.show()
-    
-    
-    
-    
+
+
+
+
 def main():
     args = parse_args()
     try:
@@ -112,39 +140,74 @@ def main():
     start = str(args.start)
     end = str(args.end)
     numVehicles = args.vehicles
+    if len(G.nodes()) == 0:
+        print("Error: Graph is empty (no nodes).")
+        return
     if start not in G:
-        raise ValueError(f"Start node {start} not in graph")
+        print(f"Error: Start node {start} not in graph.")
+        return
     if end not in G:
-        raise ValueError(f"End node {end} not in graph")
+        print(f"Error: End node {end} not in graph.")
+        return
     if numVehicles < 0:
-        raise ValueError("Number of vehicles must be nonnegative")
+        print("Error: Number of vehicles must be nonnegative.")
+        return
     if not nx.is_directed(G):
-        raise ValueError("Graph must be directed")
-    
+        print("Error: Graph must be directed.")
+        return
+    paths = list(nx.all_simple_paths(G, start, end))
+    if len(paths) == 0:
+        print(f"Error: No path exists from {start} to {end}.")
+        return
+
     flow, cost, paths, split = socialOptimum(G, numVehicles, start, end)
-    print("Social Optimum Edge Flows:")
-    print("="*30)
+    nFlow, nCost, nPaths, nSplit = nashEq(G, numVehicles, start, end)
+
+    print("Paths:")
+    for i, p in enumerate(paths):
+        print(f"  P{i}: {' -> '.join(p)}")
+
+    print("\n" + "="*50)
+    print("Social Optimum")
+    print("="*50)
+    print("Edge Flows:")
     for u, v in G.edges():
         x = flow.get((u, v), 0)
         a = float(G[u][v]["a"])
         b = float(G[u][v]["b"])
         edgeCost = a * x * x + b * x
-        print(f"{u} -> {v}: {x} vehicles, cost = {edgeCost}")
-    print("\nPaths:")
-    for i, p in enumerate(paths):
-        print(f"P{i}: {' -> '.join(p)}")
-
-    print("\nPath Flows:")
+        print(f"  {u} -> {v}: {x} vehicles, cost = {edgeCost}")
+    print("Path Flows:")
     for i, v in enumerate(split):
-        print(f"P{i}: {v} vehicles")
+        print(f"  P{i}: {v} vehicles")
+    print(f"Total Social Cost: {cost}")
 
-    print("\nTotal Social Cost:", cost)
-    
-    
+    print("\n" + "="*50)
+    print("Travel Equilibrium (Nash Equilibrium)")
+    print("="*50)
+    print("Edge Flows:")
+    for u, v in G.edges():
+        x = nFlow.get((u, v), 0)
+        a = float(G[u][v]["a"])
+        b = float(G[u][v]["b"])
+        edgeCost = a * x * x + b * x
+        print(f"  {u} -> {v}: {x} vehicles, cost = {edgeCost}")
+    print("Path Flows:")
+    for i, v in enumerate(nSplit):
+        print(f"  P{i}: {v} vehicles")
+    # show individual path costs at equilibrium
+    print("Path Costs (per driver):")
+    for i, p in enumerate(nPaths):
+        pCost = sum(float(G[u][v]["a"]) * nFlow.get((u, v), 0) + float(G[u][v]["b"])
+                    for u, v in zip(p[:-1], p[1:]))
+        print(f"  P{i}: {pCost}")
+    print(f"Total Travel Cost: {nCost}")
+
+
     if args.plot:
         plot(G, numVehicles)
-        
-        
+
+
 
 if __name__ == "__main__":
     main()
