@@ -38,7 +38,6 @@ def plot(G, title="Graph"):
 
     pos = {}
 
-# The code snippet you provided is setting the positions of the nodes in the graph visualization.
     for i, s in enumerate(sellers):
         pos[s] = (0, -i)
 
