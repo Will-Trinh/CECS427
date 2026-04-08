@@ -15,9 +15,10 @@ pip install networkx matplotlib
 
 python market_strategy.py input_file.gml --plot --interactive
 
-Optional Flags:
+### Optional Flags:
 
 --plot        Display the graph
+
 --interactive Show step-by-step execution
 
 ### Examples:
