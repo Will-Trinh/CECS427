@@ -1,6 +1,8 @@
 import networkx as nx
 import argparse
 from fractions import Fraction
+from collections import Counter
+import matplotlib.pyplot as plt
 from spider import runSpider
 # CECS 427: Assignment 4
 # Oanh Tran 029661786
@@ -56,7 +58,32 @@ def readTextFile(file):
 # =============================================================================
 # Loglog plot: Generates a log-log plot of the degree distribution of the graph
 # =============================================================================
-# Todo -
+def loglogPlot(graph):
+    if graph.number_of_nodes() == 0:
+        print("Error: Graph has no nodes, cannot generate log-log plot.")
+        return
+
+    degrees = [d for _, d in graph.degree()]
+    degree_counts = Counter(degrees)
+
+    # Sort by degree value and drop any zero-degree entries (log(0) undefined)
+    x = [k for k in sorted(degree_counts) if k > 0]
+    y = [degree_counts[k] for k in x]
+
+    if not x:
+        print("Error: All nodes have degree 0, cannot generate log-log plot.")
+        return
+
+    plt.figure(figsize=(8, 6))
+    plt.loglog(x, y, 'bo', markersize=5, alpha=0.7)
+    plt.xlabel("Degree (k)")
+    plt.ylabel("Number of Nodes")
+    plt.title("Log-Log Degree Distribution")
+    plt.grid(True, which="both", linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    plt.savefig("loglog_degree_distribution.png")
+    plt.show()
+    print("Log-log plot saved to 'loglog_degree_distribution.png'.")
 
 
 
@@ -68,6 +95,9 @@ def readTextFile(file):
 
 def pageRank(graph, k=100, tol=1e-6, outputFile="node_rank.txt"):
     n = graph.number_of_nodes()
+    if n == 0:
+        print("Error: Graph has no nodes, cannot run PageRank.")
+        return {}
     pageRankValues = {node: 1 / n for node in graph.nodes()}
     nodes = list(graph.nodes())
     print("Running PageRank algorithm for up to", k, "iterations...")
@@ -128,8 +158,7 @@ def main():
         pageRank(graph, k=100, outputFile="node_rank.txt")
 
     if args.loglogplot and graph:
-        # TODO: display log-log plot
-        pass
+        loglogPlot(graph)
 
 
 if __name__ == "__main__":
