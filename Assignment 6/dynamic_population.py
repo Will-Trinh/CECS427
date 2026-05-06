@@ -2,6 +2,7 @@ import argparse
 import networkx as nx
 import os
 import random
+import matplotlib.pyplot as plt
 
 # CECS 427: Assignment 6
 # Oanh Tran 029661786
@@ -115,14 +116,78 @@ SIRS Modifications Start
 5. If a node has majority of neighbors infected, generate random number with threshold of (shelter prob) to determine the node will take shelter, shelter length is determined by 14 days 
 
 Model Assumptions
-1. All vaccinated nodes have not been infected previously - assume no hybrid immunity, and still "susceptible" but with lower rate of infection
+1. All vaccinated nodes have not been infected previously - assume no nodes with hybrid immunity at start, and still "susceptible" but with lower rate of infection
 2. Assume recovered nodes can not be reinfected or enter susceptibility until immunity wanes off
 3. Initial nodes in shelter started shelter at day 0
-4. 
 
 """
 
-def runCovid(covidG, probability_of_infection, probability_of_death, lifespan, shelter, vaccination):
+def plotCovidResults(covidG):
+    """
+    Draws the network graph with nodes colored by their final status.
+    Vaccinated nodes share the same fill as Susceptible but have a distinct border.
+
+    """
+    
+    status_color = {
+        "S":  "steelblue",
+        "I":  "crimson",
+        "R":  "seagreen",
+        "D":  "dimgray",
+        "SH": "goldenrod",
+        "V - uninfected":  "steelblue",   # same fill as S
+    }
+
+    node_colors      = [status_color[covidG.nodes[n]["status"]] for n in covidG.nodes()]
+    node_edgecolors  = [
+        "mediumpurple" if covidG.nodes[n]["vaccinated"] else "white"
+        for n in covidG.nodes()
+    ]
+    node_linewidths  = [
+        3.0 if covidG.nodes[n]["vaccinated"] else 0.5
+        for n in covidG.nodes()
+    ]
+
+    fig, ax = plt.subplots(figsize=(14, 10))
+    ax.set_facecolor("#f7f7f7")
+    fig.patch.set_facecolor("#f7f7f7")
+
+    pos = nx.spring_layout(covidG, seed=42)
+
+    nx.draw_networkx_edges(covidG, pos, ax=ax, alpha=0.25, edge_color="gray", width=0.8)
+    nx.draw_networkx_nodes(
+        covidG, pos, ax=ax,
+        node_color=node_colors,
+        edgecolors=node_edgecolors,
+        linewidths=node_linewidths,
+        node_size=120,
+    )
+
+    # Legend
+    legend_entries = {
+        "Susceptible (S)":  ("steelblue",  "white",        0.5),
+        "Vaccinated (purple border)": ("white",  "mediumpurple", 3.0),
+        "Infected (I)":     ("crimson",    "white",        0.5),
+        "Recovered (R)":    ("seagreen",   "white",        0.5),
+        "Dead (D)":         ("dimgray",    "white",        0.5),
+        "Sheltered (SH)":   ("goldenrod",  "white",        0.5),
+    }
+    handles = [
+        plt.scatter([], [], s=80, color=fc, edgecolors=ec, linewidths=lw, label=label)
+        for label, (fc, ec, lw) in legend_entries.items()
+    ]
+    ax.legend(handles=handles, loc="upper left", framealpha=0.9, fontsize=9)
+
+    ax.set_title("COVID-19 Network Simulation — Final Node Status", fontsize=14, fontweight="bold")
+    ax.axis("off")
+
+    plt.tight_layout()
+    plt.savefig("covid_simulation_plot.png", dpi=150)
+    print("\nPlot saved to: covid_simulation_plot.png")
+    plt.show()
+
+
+def runCovid(covidG, probability_of_infection, probability_of_death, lifespan, shelter, vaccination, plot=False):
     # Vaccinated nodes have lower infection probability than unvaccinated nodes
     probability_infected = probability_of_infection
     probability_infection_V = probability_infected * 0.25
@@ -150,7 +215,7 @@ def runCovid(covidG, probability_of_infection, probability_of_death, lifespan, s
         newInfections = 0
         newDeaths = 0
         newRecovered = 0
-        # Synchronous update model: all transitions are computed from the start-of-day snapshot and applied at the end of the day to prevent same-day chain effects
+        # all transitions are computed from the start-of-day snapshot and applied at the end of the day to prevent same-day chain effects
         current = {n: covidG.nodes[n].copy() for n in covidG.nodes()}
         updates = {}
 
@@ -287,6 +352,7 @@ def runCovid(covidG, probability_of_infection, probability_of_death, lifespan, s
             s: sum(1 for n in covidG.nodes() if covidG.nodes[n]["status"] == s)
             for s in ["S", "I", "R", "D", "SH", "V"]
         }
+
         print(f"Day {i+1} | New infected: {newInfections} | New recovered: {newRecovered} | New deaths: {newDeaths}")
         print(f"  Totals -> S: {total['S']} | I: {total['I']} | R: {total['R']} | D: {total['D']} | SH: {total['SH']} | V: {total['V']}")
         print("-" * 40)
@@ -323,6 +389,10 @@ def runCovid(covidG, probability_of_infection, probability_of_death, lifespan, s
     print(f"  Recovered (vaccinated):         {vaccinatedRecovered}  → hybrid immunity wanes at 365 days")
     assert vaccinatedRecovered + unvaccinatedRecovered == total['R'], "Recovered count mismatch!"
     print("=" * 40)
+
+    # Always plot results after a covid simulation
+    plotCovidResults(covidG)
+
     
 def main():
     args = parse_args()
@@ -341,7 +411,7 @@ def main():
     elif args.action == "covid":
         covidG = initiateStatus(graph, args.initiator, args.vaccination, args.shelter)
         runCovid(covidG, args.probability_of_infection, args.probability_of_death,
-                args.lifespan, args.shelter, args.vaccination)
+                args.lifespan, args.shelter, args.vaccination, plot=args.plot)
 
 
 if __name__ == "__main__":
